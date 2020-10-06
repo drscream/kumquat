@@ -8,4 +8,4 @@ django-settings-export==1.2.1
 mysqlclient==1.4.6
 passlib==1.7.0
 pyOpenSSL==19.1.0
-zerorpc==0.6.0
+zerorpc==0.6.3
