@@ -103,9 +103,9 @@ def challenge_body(new_order):
 	raise Exception('HTTP-01 challenge was not offered by the CA server.')
 
 def split_fullchain(fullchain_pem):
-	re_pem         = b"(-+BEGIN (?:.+)-+[\\r\\n]+(?:[A-Za-z0-9+/=]{1,64}[\\r\\n]+)+-+END (?:.+)-+[\\r\\n]+)"
-	cert, ca       = re.findall(re_pem, str.encode(fullchain_pem))
-	return cert.decode("ascii"), ca.decode("ascii")
+	re_pem    = "(-+BEGIN (?:.+)-+[\\r\\n]+(?:[A-Za-z0-9+/=]{1,64}[\\r\\n]+)+-+END (?:.+)-+[\\r\\n]+)"
+	cert, *ca = re.findall(re_pem, fullchain_pem)
+	return cert, ''.join(ca)
 
 def issue_cert():
 	# Use or generate new account for ACME API
@@ -127,7 +127,7 @@ def issue_cert():
 	letsencrypt_issued = False
 	for vhost in vhosts:
 		pkey_pem = None
-		if vhost.letsencrypt_state() is 'RENEW':
+		if vhost.letsencrypt_state() == 'RENEW':
 			pkey_pem = vhost.cert.key
 
 		# Generate a certificate request based on the vhost and aliases.
@@ -163,7 +163,7 @@ def issue_cert():
 			server_cert, ca = split_fullchain(finalized_order.fullchain_pem)
 
 			cert = SSLCert()
-			cert.set_cert(cert=server_cert, key=pkey_pem, ca=ca)
+			cert.set_cert(cert=server_cert, key=pkey_pem.decode(), ca=ca)
 			cert.save()
 
 			vhost.cert = cert

@@ -1,4 +1,4 @@
-from django.core.urlresolvers import reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic import ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.shortcuts import render, redirect, get_object_or_404
@@ -136,7 +136,11 @@ def sslcertCreate(request):
 	form = SSLCertForm(request.POST or None, request.FILES or None)
 	if form.is_valid():
 		c = SSLCert()
-		c.set_cert(request.FILES['cert'].read(), request.FILES['key'].read(), request.FILES['ca'].read())
+		c.set_cert(
+			request.FILES['cert'].read().decode(),
+			request.FILES['key'].read().decode(),
+			request.FILES['ca'].read().decode()
+		)
 		c.save()
 		messages.success(request, _("Successfull added"))
 		return redirect('web_sslcert_list')

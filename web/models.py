@@ -13,18 +13,21 @@ default_length = 255
 
 class VHost(models.Model):
 	name   = models.CharField(max_length=default_length, verbose_name=_('Sub Domain'), help_text=_('Child part of your domain that is used to organize your site content.'), validators=[DomainNameValidator()])
-	domain = models.ForeignKey(Domain, blank=False)
+	domain = models.ForeignKey(Domain, blank=False, on_delete=models.CASCADE)
 	cert   = models.ForeignKey('SSLCert', blank=True, null=True, on_delete=models.SET_NULL, verbose_name='SSL Certificate')
 	use_letsencrypt = models.BooleanField(verbose_name=_('SSL Certificate managed by Let\'s Encrypt'), default=False)
 
 	def webroot(self):
-		return settings.KUMQUAT_VHOST_ROOT + '/' + str(self.punycode())
+		return settings.KUMQUAT_VHOST_ROOT + '/' + self.punycode()
+
+	def dataset_root(self):
+		return settings.KUMQUAT_VHOST_DATASET + '/' + self.punycode()
 
 	def __str__(self):
-		return bytes(self.name, encoding="utf-8").decode("idna") + '.' + str(self.domain)
+		return self.name.encode().decode("idna") + '.' + str(self.domain)
 
 	def punycode(self):
-		return str(self.name) + '.' + str(self.domain.punycode())
+		return self.name + '.' + self.domain.punycode()
 
 	def letsencrypt_state(self):
 		if not self.use_letsencrypt:
@@ -36,7 +39,7 @@ class VHost(models.Model):
 		return 'VALID'
 
 	def save(self, **kwargs):
-		self.name = self.name.encode("idna")
+		self.name = self.name.encode("idna").decode()
 		super(VHost, self).save(**kwargs)
 
 	class Meta:
@@ -44,22 +47,22 @@ class VHost(models.Model):
 
 
 class DefaultVHost(models.Model):
-	domain = models.OneToOneField(Domain, primary_key=True)
-	vhost  = models.ForeignKey(VHost, blank=False)
+	domain = models.OneToOneField(Domain, primary_key=True, on_delete=models.CASCADE)
+	vhost  = models.ForeignKey(VHost, blank=False, on_delete=models.CASCADE)
 
 class VHostAlias(models.Model):
 	alias  = models.CharField(max_length=default_length, verbose_name=_('Alias'), help_text=_('Server alias for virtual host.'), validators=[DomainNameValidator()], unique=True)
-	vhost  = models.ForeignKey(VHost, blank=False)
+	vhost  = models.ForeignKey(VHost, blank=False, on_delete=models.CASCADE)
 
 	def __str__(self):
-		return bytes(self.alias, encoding="utf-8").decode("idna")
+		return self.alias.encode().decode("idna")
 
 	def punycode(self):
-		return str(self.alias)
+		return self.alias
 
 	def save(self, **kwargs):
-		self.alias = self.alias.encode("idna")
-		super(VHostAlias, self).save(**kwargs)
+		self.alias = self.alias.encode("idna").decode()
+		super().save(**kwargs)
 
 
 class LetsEncrypt(models.Model):
